@@ -1,13 +1,14 @@
+#coding=utf-8
 #!/usr/bin/env python
 
-class Preceptron(object):
+class Perceptron(object):
     def __init__(self,input_num,activator):
         self.activator = activator
-        self.weights = {0.0 for _ in range(input_num)}
+        self.weights = [0.0 for _ in range(input_num)]
         self.bias = 0.0
 
     def __str__(self):
-        return 'weights\t:%s\n\bias\t:%f\n' % (self.weights,self.bias)
+        return 'weights\t:%s\nbias\t:%f\n' % (self.weights,self.bias)
 
     def predict(self,input_vec):
         '''
@@ -15,9 +16,9 @@ class Preceptron(object):
         '''
         return self.activator(
             reduce(lambda a,b:a+b,
-                   map(lambda a,b:a*b,
-                       zip(self.weights,input_vec),
-                       self.bias)))
+                   map(lambda (a,b):a*b,
+                       zip(self.weights,input_vec)),
+                       self.bias))
 
     def train(self,input_vecs,labels,iteration,rate):
         '''
@@ -44,5 +45,9 @@ class Preceptron(object):
         delta = label - output
         self.weights = map(lambda (x,w) : w + rate* delta*x,zip(input_vec,self.weights))
         self.bias += rate* delta
+        print "delta\t:%f" % delta
+        print self.__str__()
+
+
 
 
