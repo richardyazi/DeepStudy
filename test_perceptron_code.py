@@ -1,6 +1,6 @@
 #coding=utf-8
 #!/usr/bin/env python
-import Perceptron
+import perceptron
 
 def f(x):
     '''
@@ -27,7 +27,7 @@ def train_and_perceptron():
     :return:
     '''
     #p = Perceptron.Perceptron(2,f)
-    p = Perceptron.Perceptron(2,f)
+    p = perceptron.Perceptron(2,f)
     input_vecs,labels = get_training_dataset()
     p.train(input_vecs,labels,10,0.1)
     return p
