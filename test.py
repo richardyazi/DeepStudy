@@ -19,3 +19,5 @@ print reduce(lambda m,n:m+n ,map(lambda (x,y):x*y,zip(a,b)),1.0)
 
 def f(x):
     return 1 if x>0 else 0
+
+print range(9)
