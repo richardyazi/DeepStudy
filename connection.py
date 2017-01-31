@@ -33,6 +33,7 @@ class Connection(object):
         '''
         self.calc_gradient()
         self.weight +=rate * self.gradient
+
     def __str__(self):
         '''
         打印连接信息
