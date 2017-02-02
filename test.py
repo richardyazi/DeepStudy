@@ -29,3 +29,17 @@ def sigmoid(inX):
 print sigmoid(0.000005)
 
 print __file__
+
+x = 10*np.random.uniform(-1,1,(3,2,1))
+print x.shape
+#x[:,1:2,1:2] = [[[9]],[[9]],[[9]]]
+print x
+
+x,y = [1,2]
+print [1,2,3][-2:]
+
+x = 10*np.random.uniform(-1,1,(2,2))
+y = [[1,0],[0,1]]
+print x
+print x.sum()
+print x*y
