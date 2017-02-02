@@ -32,14 +32,14 @@ class Connection(object):
         :return:
         '''
         self.calc_gradient()
-        self.weight +=rate * self.gradient
+        self.weight += rate * self.gradient
 
     def __str__(self):
         '''
         打印连接信息
         :return:
         '''
-        return '(%u-%u)->(%y-%u) = %f' %(
+        return '(%u-%u)->(%u-%u) = %f' %(
             self.upstream_node.layer_index,
             self.upstream_node.node_index,
             self.downstream_node.layer_index,

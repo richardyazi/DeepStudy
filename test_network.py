@@ -16,10 +16,10 @@ def gradient_check(network,sample_feature,sample_label):
     network_error= lambda vec1,vec2:\
         0.5 * reduce(lambda a,b:a+b,
                      map(lambda v: (v[0] - v[1]) * (v[0] -v[1]) ,
-                         zip(vec1,vec2)))
+                         zip(vec1,vec2)),0.0)
 
     #获得网络在当前样本下的每个连接的梯度
-    network.get_gradient(sample_feature,sample_label)
+    network.get_gradient(sample_label,sample_feature)
 
     #对每个权重做梯度检查
     epsilon = 0.0001
@@ -39,16 +39,20 @@ def gradient_check(network,sample_feature,sample_label):
         except_gradient = (error2-error1) / (2* epsilon)
 
         #打印
+        print conn
         print 'excepted gradient: \t%f\nactual gradient: \t%f' %(
             except_gradient,actual_gradient)
+
+        # 还原
+        conn.weight += epsilon
 
 def get_training_data_set():
     '''
     获得训练数据
     :return:
     '''
-    image_loader = ImageLoader('mnist/train-images.idx3-ubyte',60000)
-    label_loader = LabelLoader('mnist/train-labels.idx1-ubyte',60000)
+    image_loader = ImageLoader('mnist/train-images.idx3-ubyte',60)
+    label_loader = LabelLoader('mnist/train-labels.idx1-ubyte',60)
     return image_loader.load(),label_loader.load()
 
 def get_test_data_set():
@@ -56,8 +60,8 @@ def get_test_data_set():
     获得测试数据
     :return:
     '''
-    image_loader = ImageLoader('mnist/t10k-images.idx3-ubyte', 10000)
-    label_loader = LabelLoader('mnist/t10k-labels.idx1-ubyte', 10000)
+    image_loader = ImageLoader('mnist/t10k-images.idx3-ubyte', 10)
+    label_loader = LabelLoader('mnist/t10k-labels.idx1-ubyte', 10)
     return image_loader.load(), label_loader.load()
 
 def get_result(vec):
@@ -65,9 +69,9 @@ def get_result(vec):
     max_value_index = 0
     max_value = 0
     for index in range(len(vec)):
-        if(vec[i]>max_value):
-            max_value = vec[i]
-            max_value_index = i
+        if(vec[index]>max_value):
+            max_value = vec[index]
+            max_value_index = index
     return max_value_index
 
 def evaluate(network,test_data_set,test_labels):
@@ -90,13 +94,17 @@ def evaluate(network,test_data_set,test_labels):
 def train_and_evaluate():
     last_error_ratio = 1.0
     epoch = 0
+    print "read train data"
     train_data_set,train_labels = get_training_data_set()
+    print "read test data"
     test_data_set,test_labels = get_test_data_set()
+    print "init Network"
     network = Network([784,300,10])
     while True:
         epoch += 10
+        print 'train iteration %u -> %u' % (epoch - 10,epoch)
         network.train(train_labels,train_data_set,0.1,10)
-        error_ratio = evaluate(network,test_data_set,test_labels)
+        error_ratio = 1 - evaluate(network,test_data_set,test_labels)
         print 'after apoch %d,error ratio is %f' % (epoch,error_ratio)
 
         if error_ratio > last_error_ratio:
@@ -104,20 +112,18 @@ def train_and_evaluate():
         else:
             last_error_ratio = error_ratio
 def test_network():
-    image_loader = ImageLoader('mnist/t10k-images.idx3-ubyte', 10)
-    label_loader = LabelLoader('mnist/t10k-labels.idx1-ubyte', 10)
-    input_vecs = image_loader.load()
-    lables = label_loader.load()
-    network = Network([784, 300, 10])
-    for i in range(len(input_vecs)):
-        gradient_check(network,input_vecs[i],lables[i])
+    # image_loader = ImageLoader('mnist/t10k-images.idx3-ubyte', 1)
+    # label_loader = LabelLoader('mnist/t10k-labels.idx1-ubyte', 1)
+    # input_vecs = image_loader.load()
+    # lables = label_loader.load()
+    network = Network([10, 10, 10])
+    sample = [1,2,3,4,5,6,3,2,2,4]
+    lable = [0.05,0.05,0.05,0.05,0.05,0.55,0.05,0.05,0.05,0.05]
+    gradient_check(network,sample,lable)
 
 if __name__ == '__main__':
-    test_network()
-    #train_and_evaluate()
-
-
-
+    #test_network()
+    train_and_evaluate()
 
 
 

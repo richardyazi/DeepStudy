@@ -4,7 +4,7 @@
 import numpy as np
 
 def sigmoid(inX):
-    return 1.0/(1+np.exp(inX))
+    return 1.0/(1+np.exp(-inX))
 
 class Node(object):
     def __init__(self,layer_index,node_index):
@@ -36,7 +36,7 @@ class Node(object):
         '''
         self.downstream.append(conn)
 
-    def append_upstream_connnection(self,conn):
+    def append_upstream_connection(self,conn):
         '''
         添加一个到上游节点的连接
         :param conn:
@@ -103,10 +103,11 @@ class ConstNode(object):
         节点属于隐藏层时，计算节点的delta
         :return:
         '''
-        downstream_delta = reduce(
-            lambda ret,conn : ret + conn.downstream_node.delta*conn.weight,
-            self.downstream,0.0)
-        self.delta = self.output*(1-self.output)*downstream_delta
+        # downstream_delta = reduce(
+        #     lambda ret,conn : ret + conn.downstream_node.delta*conn.weight,
+        #     self.downstream,0.0)
+        # self.delta = self.output*(1-self.output)*downstream_delta
+        self.delta = 0
 
 
     def __str__(self):

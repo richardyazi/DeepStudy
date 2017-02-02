@@ -96,3 +96,4 @@ class LabelLoader(Loader):
                 label_vec.append(0.95)
             else:
                 label_vec.append(0.05)
+        return label_vec

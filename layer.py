@@ -4,7 +4,7 @@
 from node import *
 
 class Layer(object):
-    def __index__(self,layer_index,node_count):
+    def __init__(self,layer_index,node_count):
         '''
         初始化一层
         :param layer_index: 层id
