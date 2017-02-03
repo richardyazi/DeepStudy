@@ -74,6 +74,15 @@ def get_patch(input_array,idx_i,idx_j,kernel_width,kernel_height,strike):
     elif input_array.ndim == 2:
         return input_array[start_j:start_j + kernel_height,
                start_i:start_i + kernel_width]
+def element_wise_op(array,op):
+    '''
+    实现对numpy数组的按元素操作
+    :param array:
+    :param op:
+    :return:
+    '''
+    for i in np.nditer(array,op_flags = ['readwrite']):
+        i[...] = op(i)
 
 
 

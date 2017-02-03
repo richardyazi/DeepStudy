@@ -43,3 +43,6 @@ y = [[1,0],[0,1]]
 print x
 print x.sum()
 print x*y
+
+for i in np.nditer(x,op_flags = ['readwrite']):
+    i[...] = i

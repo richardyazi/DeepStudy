@@ -46,7 +46,7 @@ class ConvLayer(object):
         self.activator = activator
         self.learning_rate = learning_rate
 
-
+    @staticmethod
     def calculate_output_size(input_size,filter_size,zero_padding,strike):
         '''
         计算输出的纬度 (3维)
@@ -69,6 +69,86 @@ class ConvLayer(object):
         self.padding_input_array = padding(self.input_array,self.zero_padding)
         for f in range(self.filter_number):
             filter = self.filter_array[f]
+            conv(self.padding_input_array,filter.get_weight(),self.output_array[f],self.strike,filter.get_bias())
+        element_wise_op(self.output_array,self.activator.forward)
+
+    def bp_sensitivity_map(self,sensitivity_array,activator):
+        '''
+        计算传递到上一层的sentivity map
+        :param sensitivity_array:
+        :param activator: 激活函数
+        :return:
+        '''
+        #处理卷积步长，对原始sensitivity map进行扩展
+        #虽然补0也会产生残差，但是不需要往上传递
+        expand_array = self.expand_sensitivity_map(sensitivity_array)
+
+        #填充卷积使得sentivity map与weights的卷积计算的输出size与输入相等
+        expand_height,expand_width = expand_array.shape[-2:]
+        zp = (self.input_width - expand_width + self.filter_width - 1 ) /2
+        padding_array = padding(expand_array,zp)
+
+        #初始化delta_array用于保存到上一层的sentivity map
+        self.delta_array = self.create_delta_array()
+
+        #对于具有多个filter的卷积层，最终传到到上一层的sensitity map
+        #是所有filter的sensitivy map之和
+        for f in range(self.filter_number):
+            filter = self.filter_array[f]
+            #filter翻转180度
+            flipped_weights = np.array(map(lambda i: np.rot90(i,2) , filter.get_weight))
+
+            #计算与一个filter对应的delta_array
+            delta_array = self.create_delta_array()
+            for d in range(filter.shape[0]):
+                conv(padding_array[f],flipped_weights[d],delta_array[d],1,0)
+            self.delta_array += delta_array
+
+            #将计算结果与激活函数的偏导数做element-wise乘法操作
+            derivative_array = np.array(self.input_array)
+            element_wise_op(derivative_array,self.activator.backward)
+            self.delta_array *= derivative_array
+
+    def expand_sensitivity_map(self,sensitivity_array):
+        '''
+        将sentivity array的步长降为1
+        :param sensitivity_array:
+        :return:
+        '''
+        depth = sensitivity_array.shape[0]
+        #确定扩展后的sensitivy map的大小
+        #计算strike为1时的sentivity map 的大小
+        expand_width = self.input_width - self.filter_width + 2 * self.zero_padding + 1
+        expand_height = self.input_height - self.filter_height + 2 * self.zero_padding +1
+
+        #构建新的sentivity map
+        expand_array = np.zeros((depth,expand_height,expand_width))
+
+        #拷贝原始数据
+        for i in range(self.output_height):
+            for j in range(self.output_width):
+                i_pos = i * self.strike
+                j_pos = j * self.strike
+                expand_array[:,i_pos,j_pos] = sensitivity_array[:,i,j]
+        return expand_array
+
+    def create_delta_array(self):
+        return np.zeros((self.channel_number,self.input_height,self.input_width))
+
+    def bp_gradint(self,sensitivity_map):
+        #处理卷积步长，对原始sensitivity map进行扩展
+        expanded_array = self.expand_sensitivity_map(sensitivity_map)
+
+        for f in range(self.filter_number):
+            #计算每个权重的梯度
+            filter = self.filter_array[f]
+            for d in range(filter.shape[0]):
+                conv(self.padding_input_array[d],expanded_array,filter.weights_grad[d],1,0)
+            #计算偏置项梯度
+            filter.bias_grad = expanded_array[f].sum()
+
+
+
 
 
 
