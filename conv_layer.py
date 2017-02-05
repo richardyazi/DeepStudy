@@ -14,7 +14,7 @@ class ConvLayer(object):
                  filter_height,
                  filter_number,
                  zero_padding,
-                 strike,activator,learning_rate):
+                 stride,activator,learning_rate):
         '''
         构造一个卷积层
         :param input_width: 输入数据的宽度
@@ -24,7 +24,7 @@ class ConvLayer(object):
         :param filter_height:过滤器长度，深度和channel_number一样，所以不需要单独的定义
         :param filter_number:过滤器数量，影响输出的深度
         :param zero_padding:填零数量
-        :param strike:步长
+        :param stride:步长
         :param activator: 激活函数
         :param learning_rate:学习率
         '''
@@ -35,27 +35,27 @@ class ConvLayer(object):
         self.filter_height = filter_height
         self.filter_number = filter_number
         self.zero_padding = zero_padding
-        self.strike = strike
+        self.stride = stride
 
-        self.output_width = ConvLayer.calculate_output_size(input_width,filter_width,zero_padding,strike)
-        self.output_height = ConvLayer.calculate_output_size(input_height,filter_height,zero_padding,strike)
-        self.output_array = np.zeros(self.filter_number,self.output_height,self.output_width)
-        self.filter_array = []
+        self.output_width = ConvLayer.calculate_output_size(input_width,filter_width,zero_padding,stride)
+        self.output_height = ConvLayer.calculate_output_size(input_height,filter_height,zero_padding,stride)
+        self.output_array = np.zeros((self.filter_number,self.output_height,self.output_width))
+        self.filters = []
         for i in range(self.filter_number):
-            self.filter_array.append(Filter(self.filter_width,self.filter_height,self.channel_number))
+            self.filters.append(Filter(self.filter_width,self.filter_height,self.channel_number))
         self.activator = activator
         self.learning_rate = learning_rate
 
     @staticmethod
-    def calculate_output_size(input_size,filter_size,zero_padding,strike):
+    def calculate_output_size(input_size,filter_size,zero_padding,stride):
         '''
         计算输出的纬度 (3维)
         :param filter_size:
         :param zero_padding:
-        :param strike:
+        :param stride:
         :return:
         '''
-        return (input_size - filter_size + 2 * zero_padding) / strike + 1
+        return (input_size - filter_size + 2 * zero_padding) / stride + 1
 
     def forward(self,input_array):
         '''
@@ -68,13 +68,18 @@ class ConvLayer(object):
         #填充0
         self.padding_input_array = padding(self.input_array,self.zero_padding)
         for f in range(self.filter_number):
-            filter = self.filter_array[f]
-            conv(self.padding_input_array,filter.get_weight(),self.output_array[f],self.strike,filter.get_bias())
+            filter = self.filters[f]
+            conv(self.padding_input_array,filter.get_weights(),self.output_array[f],self.stride,filter.get_bias())
         element_wise_op(self.output_array,self.activator.forward)
+
+    def backward(self,sensitivity_array,activator):
+        self.bp_sensitivity_map(sensitivity_array,activator)
+        self.bp_gradient(sensitivity_array)
+
 
     def bp_sensitivity_map(self,sensitivity_array,activator):
         '''
-        计算传递到上一层的sentivity map
+        计算传递到本层的sentivity map
         :param sensitivity_array:
         :param activator: 激活函数
         :return:
@@ -94,13 +99,13 @@ class ConvLayer(object):
         #对于具有多个filter的卷积层，最终传到到上一层的sensitity map
         #是所有filter的sensitivy map之和
         for f in range(self.filter_number):
-            filter = self.filter_array[f]
+            filter = self.filters[f]
             #filter翻转180度
-            flipped_weights = np.array(map(lambda i: np.rot90(i,2) , filter.get_weight))
+            flipped_weights = np.array(map(lambda i: np.rot90(i,2) , filter.get_weights()))
 
             #计算与一个filter对应的delta_array
             delta_array = self.create_delta_array()
-            for d in range(filter.shape[0]):
+            for d in range(delta_array.shape[0]):
                 conv(padding_array[f],flipped_weights[d],delta_array[d],1,0)
             self.delta_array += delta_array
 
@@ -117,7 +122,7 @@ class ConvLayer(object):
         '''
         depth = sensitivity_array.shape[0]
         #确定扩展后的sensitivy map的大小
-        #计算strike为1时的sentivity map 的大小
+        #计算stride为1时的sentivity map 的大小
         expand_width = self.input_width - self.filter_width + 2 * self.zero_padding + 1
         expand_height = self.input_height - self.filter_height + 2 * self.zero_padding +1
 
@@ -127,23 +132,23 @@ class ConvLayer(object):
         #拷贝原始数据
         for i in range(self.output_height):
             for j in range(self.output_width):
-                i_pos = i * self.strike
-                j_pos = j * self.strike
+                i_pos = i * self.stride
+                j_pos = j * self.stride
                 expand_array[:,i_pos,j_pos] = sensitivity_array[:,i,j]
         return expand_array
 
     def create_delta_array(self):
         return np.zeros((self.channel_number,self.input_height,self.input_width))
 
-    def bp_gradint(self,sensitivity_map):
+    def bp_gradient(self,sensitivity_map):
         #处理卷积步长，对原始sensitivity map进行扩展
         expanded_array = self.expand_sensitivity_map(sensitivity_map)
 
         for f in range(self.filter_number):
             #计算每个权重的梯度
-            filter = self.filter_array[f]
-            for d in range(filter.shape[0]):
-                conv(self.padding_input_array[d],expanded_array,filter.weights_grad[d],1,0)
+            filter = self.filters[f]
+            for d in range(filter.weights.shape[0]):
+                conv(self.padding_input_array[d],expanded_array[f],filter.weights_grad[d],1,0)
             #计算偏置项梯度
             filter.bias_grad = expanded_array[f].sum()
 

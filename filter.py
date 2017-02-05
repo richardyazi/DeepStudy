@@ -13,13 +13,13 @@ class Filter(object):
         '''
         self.weights = np.random.uniform(-1e-4,1e-4,(depth,height,width))
         self.bias = 0.0
-        self.weights_grad = np.zeros(self.weights.sharp)
+        self.weights_grad = np.zeros(self.weights.shape)
         self.bias_grad = 0.0
 
     def __repr__(self):
         return 'filter weights:\n%s\nbias:\n%s' % (repr(self.weights),repr(self.bias))
 
-    def get_weight(self):
+    def get_weights(self):
         return self.weights
 
     def get_bias(self):

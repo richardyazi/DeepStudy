@@ -66,8 +66,8 @@ def gradient_check():
     sensitivity_array = np.ones(cl.output_array.shape,
                                 dtype=np.float64)
     # 计算梯度
-    cl.backward(a, sensitivity_array,
-                  IdentityActivator())
+    cl.backward(sensitivity_array,
+                  IdentityActivator)
     # 检查梯度
     epsilon = 10e-4
     for d in range(cl.filters[0].weights_grad.shape[0]):
